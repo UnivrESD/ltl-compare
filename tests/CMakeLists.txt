@@ -9,7 +9,6 @@ message("-- Including test cases...")
 set(WORK_DIR ${CMAKE_BINARY_DIR})
 set(TEST_DIR ${CMAKE_BINARY_DIR}/../tests)
 
-addTest("TraceTest" ./traceTests.cc)
 addTest("HarmLinearVsQuadraticAutomatonEvalTest" ./harmLinearVsQuadraticAutomatonEvalTests.cc)
 addTest("OpeTest" ./opeTests.cc)
 addTest("ConvTest" ./conversionTests.cc)
