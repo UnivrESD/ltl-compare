@@ -33,7 +33,6 @@
 #include "globals.hh"
 #include "message.hh"
 #include "misc.hh"
-#include "set_cover/set_cover_wrapper.hh"
 #include "temporalParsingUtils.hh"
 
 using namespace expression;
@@ -382,10 +381,6 @@ std::vector<size_t> Qualifier::getCoverageSet() {
     set_to_elements.push_back(cfSubset);
     setIdToAssId[setId] = aID;
     setId++;
-  }
-  auto selectedSets = findMinSetCover(set_to_elements);
-  for (auto setId : selectedSets) {
-    ret.push_back(setIdToAssId[setId]);
   }
 
   return ret;

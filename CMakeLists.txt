@@ -182,9 +182,6 @@ add_subdirectory(src/clustering)
 #Table printer
 add_subdirectory(src/fort)
 
-#Set cover
-add_subdirectory(src/paal)
-
 
 ########MINER#########################################
 add_subdirectory(src/miner)

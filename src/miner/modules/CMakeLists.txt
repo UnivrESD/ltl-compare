@@ -43,7 +43,7 @@ target_include_directories(propertyMiner PUBLIC include/propertyMiner/interface/
 #Property Qualifier
 SET(CR_SRC src/propertyQualification/interface/PropertyQualifier.cc src/propertyQualification/qualifier/Qualifier.cc)
 add_library(propertyQualification ${CR_SRC} )
-target_link_libraries(propertyQualification temporalParser fort traceReader miner_utils set_cover)
+target_link_libraries(propertyQualification temporalParser fort traceReader miner_utils)
 
 target_include_directories(propertyQualification PUBLIC include/propertyQualification/interface/
 	include/propertyQualification/qualifier/)
