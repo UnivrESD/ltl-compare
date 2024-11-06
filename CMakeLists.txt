@@ -193,6 +193,9 @@ if (DEA)
     add_subdirectory(src/dea)
 endif()
 
+#ltl-compare
+add_subdirectory(src/ltl-compare)
+
 #ast printer
 add_subdirectory(src/ast)
 
