@@ -1,6 +1,6 @@
 function(addTest test_name src)
     add_executable(${test_name} ${src})
-    target_link_libraries (${test_name} gtest_main stdc++fs all_utils progresscpp logging exp commandLineParser temporalParser miner)
+    target_link_libraries (${test_name} gtest_main stdc++fs all_utils progresscpp logging exp commandLineParser temporalParser miner comparison)
     add_test(NAME ${test_name} COMMAND ${test_name} WORKING_DIRECTORY ${WORK_DIR})
 endfunction()
 
@@ -21,3 +21,4 @@ addTest("PermutatorTest" ./permutatorTests.cc )
 addTest("DTOTest" ./dtoTests.cc )
 addTest("TempExpSyntaxTreeTests" ./tempExpSyntaxTreeTests.cc )
 
+addTest("ltl-compareTests" ./ltl-compareTests.cc )
