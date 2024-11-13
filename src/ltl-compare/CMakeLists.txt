@@ -7,7 +7,7 @@ target_include_directories(comparison PUBLIC include/)
 
 
 ###Executable---------------------------------###
-add_executable(ltl-compare EXCLUDE_FROM_ALL src/main.cc)
+add_executable(ltl-compare EXCLUDE_FROM_ALL src/main.cc src/ltl-compare.cc) 
 target_include_directories(ltl-compare PUBLIC include/)
 set_target_properties(ltl-compare PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
 

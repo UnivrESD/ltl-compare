@@ -84,6 +84,7 @@ int main(int arg, char *argv[]) {
   //test 1
   spot::formula p1 = spot::parse_formula("{p2[*1..3]}");
   spot::formula p2 = spot::parse_formula("p2 & Xp0");
+ 
   if(spot::are_equivalent(p1,p2)==0){
     std::cout << ((spot::contains(p1,p2))? "0.5" : "0");
   }else
