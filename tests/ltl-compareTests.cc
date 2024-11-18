@@ -13,11 +13,11 @@ TEST(ltlcompare, spotSemanticEquivalence) {
   std::ifstream file (assFile);
   if(!file){
     std::cerr << "Errore nell aprire il file!" << std::endl;
-    return 1:
   }
-  float risultati[5] = {0,0,0.5,0.5,1};
-  int i=0;
-  int res;
+  float risultati[10] = {0,0,0.5,0.5,1,0,0.5,0,0.5,1};
+  float res;
+  int i = 0;
+  std::string line1 , line2;
   while(std::getline(file , line1 )){
     if(std::getline(file, line2)){
       res = semanticComparison(line1,line2);
