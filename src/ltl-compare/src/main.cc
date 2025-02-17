@@ -26,6 +26,7 @@
 #include "ltl-compare.hh"
 #include <algorithm>
 #include <unordered_set>
+#include <sstream>
 //spot includes
 #include "spot/twa/bddprint.hh"
 #include "spot/twa/twa.hh"
@@ -76,7 +77,7 @@ void dfs(spot::const_twa_graph_ptr aut){
       if(aut->state_is_accepting(currState))
       {
         //word.push_back(it->acc().as_string());
-        std::cout << it->acc().as_string() << "\n";
+        std::cout << it->acc().as_string() << "\n";cd 
       }
     }
 }
@@ -85,12 +86,84 @@ void dfs(spot::const_twa_graph_ptr aut){
 
 }*/
 
+std::string vectorToString(const std::vector<std::string> vec, const std::string& delimiter){
+  std::ostringstream oss;
+  for(size_t i = 0; i< vec.size(); i++){
+    oss << vec[i];
+    if(i<vec.size()-1){
+      oss << delimiter;
+    }
+  }
+  return oss.str();
+}
+
+std::string prova(const spot::formula &f, bool negato){
+
+      if(f.is(spot::op::And)){
+        std::vector<std::string> operandi;
+        
+        for(size_t i = 0; i < f.size(); i++){
+          //std::cout<<f[i].ap_name()<<'\n';
+          operandi.push_back(prova(f[i],negato));
+        }
+          return vectorToString(operandi," & ");
+      }
+
+      if(f.is(spot::op::Or)){
+        std::vector<std::string> operandi;
+        for(size_t i = 0 ; i < f.size(); i++){
+           //std::cout<<f[i].ap_name()<<'\n';
+          operandi.push_back(prova(f[i],negato));
+        }
+        return vectorToString(operandi, " | ");
+      }
+
+      if(f.is(spot::op::Not)){
+        negato = true;
+        return prova(f[0],negato);
+
+      }
+
+      if(f.is(spot::op::ap)){
+        if(negato == false)
+        {
+          std:: string temp = f.ap_name();
+
+          return temp.append("==1");
+        }
+        else{
+          std:: string temp = f.ap_name();
+
+          return temp.append("==0");
+        }
+      }
+
+
+  }
+
+void stampaVettore(const std::vector<std::vector<std::string>>& vec) {
+    for (const auto& sottovettore : vec) {
+        std::cout << "Percorso: { ";
+        for (size_t i = 0 ; i < sottovettore.size(); ++i) {
+           std::cout << sottovettore[i];
+           if ( i != sottovettore.size()- 1){
+            std::cout << ", ";
+           }
+        }
+        std::cout << "}" << std::endl; // Chiudi le graffe
+    }
+}
+
+
+
+
+
 typedef std::unordered_set<const spot::state*,
                            spot::state_ptr_hash,
                            spot::state_ptr_equal> seen_t;
 
                         
-void dfs(spot::const_twa_graph_ptr aut ,const  spot::state* state, seen_t& seen, auto bddDict , std::vector<std::string>&risultato,std::string temp,int& primavolta, size_t& statoaccetante){
+void dfs(spot::const_twa_graph_ptr aut ,const  spot::state* state, seen_t& seen, auto bddDict , std::vector<std::vector<std::string>>&risultato,std::vector<std::string>temp,int& primavolta, size_t& statoaccetante){
   
   
   
@@ -103,6 +176,8 @@ void dfs(spot::const_twa_graph_ptr aut ,const  spot::state* state, seen_t& seen,
     
     const spot::state* dst = i->dst();
     spot::formula edge = spot::parse_formula(spot::bdd_format_formula(bddDict,i->cond()));
+    std::string tempString;
+    std::cout << aut->format_state(state) << "->" << aut->format_state(dst) << '\n';
     if(aut->state_is_accepting(state) && (state->hash() ==dst->hash()&&!aut->succ_iter(state)->next()) || ((dst->hash() == statoaccetante)==1))
     {
        //auto risultato = dst->hash() == state->hash();
@@ -110,6 +185,7 @@ void dfs(spot::const_twa_graph_ptr aut ,const  spot::state* state, seen_t& seen,
       if(primavolta == 0)
       {
           statoaccetante = state->hash();
+          std::cout<<"valore stato finale = " + edge <<'\n';
           
       }
       //std::cout << "dst dentro lo stato accetante " << dst->hash() << '\n';
@@ -123,15 +199,19 @@ void dfs(spot::const_twa_graph_ptr aut ,const  spot::state* state, seen_t& seen,
       //risultato.push_back(temp);
       if(primavolta == 1)
       {
-        temp = temp.append(edge.ap_name());
+        std::cout<<"dentro stato finito:"<<'\n';
+        std::cout << edge<< '\n';
+        //temp = temp.append(spot::bdd_format_formula(bddDict,i->cond()));
+
+          temp.push_back(prova(edge,false));
       }
       //std::cout << "vaffanculo " << aut->format_state(state)<< edge <<'\n';
       //std::cout << temp << '\n';
       risultato.push_back(temp);
-      //std::cout << risultato.back() << '\n';
+      std::cout <<"codice finale: " + temp.back() << '\n';
       //std::cout << edge << '\n';
       primavolta = 1;
-      temp=" ";
+      temp.clear();
     }else{
       
       //std::cout << "dst " << dst->hash() << '\n';
@@ -144,12 +224,18 @@ void dfs(spot::const_twa_graph_ptr aut ,const  spot::state* state, seen_t& seen,
       //std::cout<<"num_states"<<aut->num_states()-1 << '\n';
       if(primavolta==1)
       {
-      temp = temp.erase(0,1);
-      temp = temp.append(edge.ap_name());
-     
+         std::cout<<"prima volta = 1 "<< '\n';
+          std::cout<<edge<<'\n';
+           temp.push_back(prova(edge,false));
+             std::cout << "uscita di sta roba " + temp.back() << '\n';
+      }else{
+        std::cout<<"prima volta = 1 "<< '\n';
+      std::cout<<edge << '\n';
+      //temp.push_back(spot::bdd_format_formula(bddDict,i->cond()));
+      //std::cout << temp.back() << '\n';
+      temp.push_back(prova(edge,false));
+       std::cout << "uscita di sta roba " + temp.back() << '\n';
       }
-      else
-        temp=temp.append(edge.ap_name());
       //std::cout<< edge << '\n';
       //std::cout << temp << '\n';
       //std::cout << aut->format_state(state) << "->" << aut->format_state(dst) << edge << '\n';
@@ -160,12 +246,94 @@ void dfs(spot::const_twa_graph_ptr aut ,const  spot::state* state, seen_t& seen,
 
 
   
+    }
+
+ std::vector<std::string> split(const std::string& str, char delimiter) {
+    std::vector<std::string> tokens;
+    std::string token;
+    std::istringstream tokenStream(str);
+    while (std::getline(tokenStream, token, delimiter)) {
+        tokens.push_back(token);
+    }
+    return tokens;
+}
+
+// Funzione per elaborare i vettori di stringhe
+std::vector<std::vector<std::string>> processVector(const std::vector<std::vector<std::string>>& input) {
+    std::vector<std::vector<std::string>> output;
+
+    for (const auto& vec : input) {
+        std::vector<std::vector<std::string>> tempOutputs(1); // Per mantenere i risultati parziali
+
+        for (const auto& str : vec) {
+            if (str.find('|') != std::string::npos) {
+                // Dividi la stringa in base a '|'
+                std::vector<std::string> parts = split(str, '|');
+                // Aggiungi ogni parte a tutte le combinazioni esistenti
+                std::vector<std::vector<std::string>> newOutputs;
+                for (const auto& part : parts) {
+                    for (auto temp : tempOutputs) {
+                        temp.push_back(part); // Aggiungi parte al risultato parziale
+                        newOutputs.push_back(temp);
+                    }
+                }
+                tempOutputs = std::move(newOutputs);
+            } else {
+                // Aggiungi la stringa invariata a tutti i risultati parziali
+                for (auto& temp : tempOutputs) {
+                    temp.push_back(str);
+                }
+            }
+        }
+
+        // Aggiungi i risultati finali
+        for (const auto& temp : tempOutputs) {
+            output.push_back(temp);
+        }
+    }
+
+    return output;
+}
+
+std::vector<std::vector<std::string>> removeMatchingFirstElement(const std::vector<std::vector<std::string>>& input) {
+    // Controlla se l'input è vuoto o ha un solo vettore
+    if (input.empty() || input.size() == 1) {
+        return input;
+    }
+
+    // Copia l'input per mantenere immutabile l'originale
+    std::vector<std::vector<std::string>> result = input;
+
+    // Itera a partire dal secondo vettore
+    for (size_t i = 1; i < result.size(); ++i) {
+        // Rimuovi i primi `i` elementi, se ci sono abbastanza elementi
+        if (result[i].size() > i) {
+            result[i].erase(result[i].begin(), result[i].begin() + i);
+        } else {
+            result[i].clear(); // Se ci sono meno di `i` elementi, svuota il vettore
+        }
+    }
+
+    return result;
+}
+std::vector<std::vector<std::string>> beautify(const std::vector<std::vector<std::string>>& vec){
+    std::vector<std::vector<std::string>> output1 = removeMatchingFirstElement(vec);
+    //printVector(output1);
+    std::vector<std::vector<std::string>> output2 = processVector(output1);
+    return output2;
+}  
+std::vector<std::vector<std::string>> modificavettore(std::vector<std::vector<std::string>>vec){
+  for(size_t i = 1; i < vec.size(); ++i){
+    size_t numToRemove = i;
+    if(vec[i].size()>= numToRemove ){
+      vec[i].erase(vec[i].begin(),vec[i].begin() + numToRemove);
+    }
   }
-  
+  return vec;
+}
 
 
-
-std::vector<std::string> dfs_rec(spot::const_twa_graph_ptr aut,int& primavolta, size_t& statoaccetante){
+std::vector<std::vector<std::string>> dfs_rec(spot::const_twa_graph_ptr aut,int& primavolta, size_t& statoaccetante){
 
  //auto s = aut->get_init_state();
  //std::vector<std::vector<std::string>>ris;
@@ -174,17 +342,90 @@ std::vector<std::string> dfs_rec(spot::const_twa_graph_ptr aut,int& primavolta, 
  seen_t seen;
  //std::vector<bool>seen(aut->num_states());
  auto bdddict= aut->get_dict();
- std::vector<std::string> risultato;
+ std::vector<std::vector<std::string>> risultato;
  //int iteratore = 0;
  //std::cout<<"entrato"<<'\n';
- std::string temp=" ";
+ std::vector<std::string> temp;
+ std::vector<std::vector<std::string>> real;
  dfs(aut,aut->get_init_state(),seen,bdddict,risultato,temp,primavolta,statoaccetante);
+ stampaVettore(risultato);
+ std::cout<<"\n\n"<< std::endl;
+ real = beautify(risultato);
+ //stampaVettore(real);
  for (auto s: seen)
     s->destroy();
 //std::cout<<"entrato" << '\n';
- 
- return risultato;
+ return real;
 }
+//ennesima prova
+void dfs_rec_prova(spot::const_twa_graph_ptr aut, unsigned state, 
+std::vector<bool>&seen,
+std::vector<unsigned>&path,
+std::vector<spot::formula>&edges,
+const spot::bdd_dict_ptr& bddDict,
+std::vector<std::string>&temp,
+std::vector<std::vector<std::string>>&risultato){
+  seen[state] = true;       // Contrassegna lo stato come visitato
+    path.push_back(state);    // Aggiungi lo stato al percorso corrente
+
+    // Controlla se lo stato è accettante
+    if (aut->state_is_accepting(state)) {
+        std::cout << "Route to accepting state: ";
+        for(size_t i=0; i<path.size();++i){
+          //std::cout<<"prova"<<'\n';
+          //std::cout<<path[i];
+          if(i<edges.size()){
+            temp.push_back(prova(edges[i],false));
+            std::cout<< temp.back() << "," <<'\n';
+          }
+        }
+        risultato.push_back(temp);
+        temp.clear();
+        std::cout << '\n';
+    }
+
+    // Esplora tutti i vicini
+    for (auto& e : aut->out(state)) {
+      if(e.dst >= aut->num_states()){
+        std::cerr << "Invalid destination state detected.\n";
+        continue;
+      }
+        if (!seen[e.dst]) {
+           //std::cout<<"prova2"<<'\n';
+           spot::formula edge_label = spot::parse_formula(spot::bdd_format_formula(bddDict,e.cond));
+           edges.push_back(edge_label);
+            dfs_rec_prova(aut, e.dst, seen, path,edges,bddDict,temp,risultato);
+            edges.pop_back();
+        }
+    }
+
+    // Backtracking: rimuovi lo stato dal percorso e resetta il visto
+    path.pop_back();
+    seen[state] = false;
+}
+
+void samu_prova(spot::const_twa_graph_ptr aut){
+  size_t stateCount = 0;
+  auto initState = aut->get_init_state();
+  std::unordered_map<size_t,const spot::state *> visited;
+  std::deque<const spot::state *> fringe;
+
+
+  fringe.push_front(initState);
+  visited.insert({initState->hash(),initState});
+  while(!fringe.empty()){
+    const spot::state *currstate = fringe.back();
+    fringe.pop_back();
+    for(auto s: aut->succ(currstate)){
+      if(visited.count(s->dst()->hash())==0){
+        std::cout << aut->format_state(currstate) << "->" << aut->format_state(s->dst())<< "'\n";
+        visited.insert({s->dst()->hash(),s->dst()});
+        fringe.push_back(s->dst());
+      }
+    }
+  }
+}
+
 
 //domande da fare perche forse da solo non ne esco
 /*
@@ -322,27 +563,50 @@ int main(int arg, char *argv[]) {
     return 1;
   //dfs_rec(spot::translator().run(pf.f));
   dfs_rec(spot::translator().run(pf.f));*/
-  int primavolta = 0;
+  /*int primavolta = 0;
  size_t  statoaccetante = 0;
- std::vector<std::string> list1;
+ std::vector<std::vector<std::string>> list1;
   spot::parsed_formula pf2 = spot::parse_infix_psl("{a##1b}|{x ##1 y ##1z}|{c ##1 d ##1e}");
   if(pf2.format_errors(std::cerr))
     return 1;
   list1 = dfs_rec(spot::translator().run(pf2.f),primavolta,statoaccetante);
- 
+ stampaVettore(list1);
  //prova 2 chatgpt
-    // Impostare lo stato accettante
+    // Impostare lo stato accettante*/
 
-  primavolta = 0;
- statoaccetante = 0;
- std::vector<std::string> list2;
-  std::cout << "seconda prova" << '\n';
+  int primavolta = 0;
+ size_t statoaccetante = 0;
+ std::vector<std::vector<std::string>> list2;
+
+  std::cout << "prova a | b" << '\n';
   spot::parsed_formula pf = spot::parse_infix_psl("{a##1b}|{x ##1 y ##1z}");
-  if(pf2.format_errors(std::cerr))
+  if(pf.format_errors(std::cerr))
     return 1;
-  list2 = dfs_rec(spot::translator().run(pf.f),primavolta,statoaccetante); 
-   
-  std::vector<std::string> intersezione; 
+    spot::translator trans;
+  trans.set_pref(spot::postprocessor::Deterministic);
+  auto aut = trans.run(pf.f);
+  //list2 = dfs_rec(aut,primavolta,statoaccetante);
+   //stampaVettore(list2);
+  std::cout << "\n\n" << std::endl;
+  std::vector<bool>seen(aut->num_states(),false);
+  std::vector<unsigned>path;
+  //std::vector<spot::formula>edges;
+  std::vector<spot::formula>edges;
+  std::vector<std::string> temp;
+  std::vector<std::vector<std::string>> risultato;
+    std::vector<std::vector<std::string>> real;
+  dfs_rec_prova(aut,aut->get_init_state_number(),seen,path,edges,aut->get_dict(),temp,risultato);
+  stampaVettore(risultato);
+  //real = beautify(risultato);
+  printf("siumm\n");
+  //stampaVettore(real);
+  std::cout << "\n\n" << std::endl;
+  samu_prova(aut);
+  //std::cout << prova(pf.f,false) << '\n';
+  
+
+
+  /*std::vector<std::string> intersezione; 
   std::vector<std::string> unione ; 
 
   std::sort(list1.begin(), list1.end());
@@ -356,9 +620,29 @@ int main(int arg, char *argv[]) {
 
   double percentuale = (double)intersezione.size() / unione.size() * 100;
 
-  std::cout << "Percentuale di intersezione: " << percentuale << "%" << std::endl;
+  std::cout << "Percentuale di intersezione: " << percentuale << "%" << std::endl;*/
   
+  /*primavolta = 0;
+  statoaccetante = 0;
+  spot::parsed_formula pf3 = spot::parse_infix_psl("{p2}");
+  std::vector<std::vector<std::string>> list3;
+  list3 = dfs_rec(spot::translator().run(pf3.f),primavolta,statoaccetante);
 
-  return 0;
+
+stampaVettore(list3);
+
+ primavolta = 0;
+ statoaccetante = 0;
+ spot::parsed_formula pf4 = spot::parse_infix_psl("{(a |  b) ##1c}");
+ std::vector<std::vector<std::string>> list4;
+ list4 = dfs_rec(spot::translator().run(pf4.f),primavolta,statoaccetante);
+ stampaVettore(list4);
+
+  primavolta = 0;
+ statoaccetante = 0;
+ spot::parsed_formula pf5 = spot::parse_infix_psl("{(a |  b) ##1c} | {x ##1 y ##1z}");
+ std::vector<std::vector<std::string>> list5;
+ list5 = dfs_rec(spot::translator().run(pf5.f),primavolta,statoaccetante);
+ stampaVettore(list5);*/
 }
 
