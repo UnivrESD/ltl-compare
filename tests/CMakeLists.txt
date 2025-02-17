@@ -19,6 +19,6 @@ addTest("TemporalExpressionTest" ./temporalExpressionTests.cc )
 addTest("TemporalDepthTest" ./temporalDepthTests.cc )
 addTest("PermutatorTest" ./permutatorTests.cc )
 addTest("DTOTest" ./dtoTests.cc )
-addTest("TempExpSyntaxTreeTests" ./tempExpSyntaxTreeTests.cc )
+addTest("TokenizerTests" ./tokenizerTests.cc )
 
 addTest("ltl-compareTests" ./ltl-compareTests.cc )

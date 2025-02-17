@@ -18,23 +18,23 @@
 #include "formula/expression/TypeCast.hh"
 #include "globals.hh"
 #include "misc.hh"
-#include "visitors/PrinterVisitor.hh"
+#include "visitors/TokenizerVisitor.hh"
 
 namespace expression {
-PrinterVisitor::PrinterVisitor(Language lang, bool colored,
-                               PrintMode mode)
+TokenizerVisitor::TokenizerVisitor(Language lang, bool colored,
+                                   PrintMode mode)
     : ExpVisitor(), _ss(), _lang(lang), _colored(colored),
       _printMode(mode), _ope_stack(), _temporal_ope_stack() {
   _ope_stack.push(ope::ope::NoOp);
   _temporal_ope_stack.push(ope::temporalOpe::TemporalNoOp);
 }
 
-void PrinterVisitor::clear() {
+void TokenizerVisitor::clear() {
   _ss.clear();
   _ss.str(std::string());
 }
 
-std::string PrinterVisitor::get() {
+std::string TokenizerVisitor::get() {
   std::string ret = _ss.str();
   clear();
   return ret;
@@ -44,12 +44,12 @@ std::string PrinterVisitor::get() {
 //Atom------------------------------------------------------------------------------
 #define selCol(bw, col) (_colored ? col : bw)
 #define VARIABLE(LEAF)                                               \
-  void PrinterVisitor::visit(LEAF &o) {                              \
+  void TokenizerVisitor::visit(LEAF &o) {                            \
     _ss << selCol(o.getName(), VAR(o.getName()));                    \
   }
 
 #define INT_CONSTANT(LEAF)                                           \
-  void PrinterVisitor::visit(LEAF &o) {                              \
+  void TokenizerVisitor::visit(LEAF &o) {                            \
     if (o.getType().first == ExpType::UInt) {                        \
       _ss << selCol(std::to_string((UInt)o.evaluate(0)),             \
                     VAR(std::to_string((UInt)o.evaluate(0))));       \
@@ -60,10 +60,10 @@ std::string PrinterVisitor::get() {
   }
 
 #define REAL_CONSTANT(LEAF)                                          \
-  void PrinterVisitor::visit(LEAF &o) { _ss << o.evaluate(0); }
+  void TokenizerVisitor::visit(LEAF &o) { _ss << o.evaluate(0); }
 
 #define BOOLEAN_CONSTANT(LEAF)                                       \
-  void PrinterVisitor::visit(LEAF &o) {                              \
+  void TokenizerVisitor::visit(LEAF &o) {                            \
     _ss << (o.evaluate(0) ? selCol(std::string("true"),              \
                                    BOOL(std::string("true")))        \
                           : selCol(std::string("false"),             \
@@ -71,7 +71,7 @@ std::string PrinterVisitor::get() {
   }
 
 #define STRING_CONSTANT(LEAF)                                        \
-  void PrinterVisitor::visit(LEAF &o) {                              \
+  void TokenizerVisitor::visit(LEAF &o) {                            \
     _ss << "\"" << selCol(o.evaluate(0), VAR(o.evaluate(0)))         \
         << "\"";                                                     \
   }
@@ -79,7 +79,7 @@ std::string PrinterVisitor::get() {
 //PropositionalExpression------------------------------------------------------------------------------
 
 #define EXP_OPE(NODE)                                                \
-  void PrinterVisitor::visit(expression::NODE &o) {                  \
+  void TokenizerVisitor::visit(expression::NODE &o) {                \
     auto parent_op = _ope_stack.top();                               \
     _ope_stack.push(ope::ope::NODE);                                 \
     auto &items = o.getItems();                                      \
@@ -113,12 +113,12 @@ std::string PrinterVisitor::get() {
   }
 
 #define TYPE_CAST(NODE)                                              \
-  void PrinterVisitor::visit(expression::NODE &o) {                  \
+  void TokenizerVisitor::visit(expression::NODE &o) {                \
     o.getItem()->acceptVisitor(*this);                               \
   }
 
 #define EXP_OPE_BIT_SELECTION(NODE)                                  \
-  void PrinterVisitor::visit(expression::NODE &o) {                  \
+  void TokenizerVisitor::visit(expression::NODE &o) {                \
     if (o.getLowerBound() == o.getUpperBound()) {                    \
       o.getItem()->acceptVisitor(*this);                             \
       _ss << selCol("[", BOOL("["));                                 \
@@ -138,7 +138,7 @@ std::string PrinterVisitor::get() {
   }
 
 #define UNARY_FUNCTION(TYPE)                                         \
-  void PrinterVisitor::visit(TYPE &o) {                              \
+  void TokenizerVisitor::visit(TYPE &o) {                            \
     if (_colored) {                                                  \
       _ss << o.toColoredString(_printMode == PrintMode::ShowAll);    \
     } else {                                                         \
@@ -159,7 +159,7 @@ EXP_OPE(PropositionXor)
 EXP_OPE(PropositionEq)
 EXP_OPE(PropositionNeq)
 
-void PrinterVisitor::visit(expression::PropositionNot &o) {
+void TokenizerVisitor::visit(expression::PropositionNot &o) {
   _ope_stack.push(ope::ope::PropositionNot);
   _ss << selCol(opeToString(ope::PropositionNot),
                 BOOL(opeToString(ope::PropositionNot)));
@@ -167,7 +167,7 @@ void PrinterVisitor::visit(expression::PropositionNot &o) {
   _ope_stack.pop();
 }
 
-void PrinterVisitor::visit(expression::IntNot &o) {
+void TokenizerVisitor::visit(expression::IntNot &o) {
   _ope_stack.push(ope::ope::IntNot);
   _ss << selCol(opeToString(ope::IntNot),
                 BOOL(opeToString(ope::IntNot)));
@@ -213,9 +213,10 @@ EXP_OPE(IntRShift)
 TYPE_CAST(IntToFloat)
 TYPE_CAST(IntToBool)
 
+// Modifica da qua in giu
 //TemporalExpression------------------------------------------------------------------------------
 
-bool PrinterVisitor::sereNeedsCurlyBrackets() {
+bool TokenizerVisitor::sereNeedsCurlyBrackets() {
   return (_temporal_ope_stack.top() ==
               ope::temporalOpe::TemporalNoOp ||
           isPropertyOpe(_temporal_ope_stack.top())) &&
@@ -223,7 +224,7 @@ bool PrinterVisitor::sereNeedsCurlyBrackets() {
 }
 
 std::pair<std::string, std::string>
-PrinterVisitor::getSereBrackets() {
+TokenizerVisitor::getSereBrackets() {
   if (_lang != Language::SVA) {
     return std::make_pair("{", "}");
   } else {
@@ -238,14 +239,13 @@ static std::string chooseTemporalOpColor(const std::string &str,
     return TEMP(str);
   }
 }
-
-bool isBinaryRightAssociativePrinter(ope::temporalOpe op) {
+bool isBinaryRightAssociative(ope::temporalOpe op) {
   return op == ope::temporalOpe::PropertyUntil ||
          op == ope::temporalOpe::PropertyRelease;
 }
 
 #define PROPERTY(NODE)                                               \
-  void PrinterVisitor::visit(expression::NODE &o) {                  \
+  void TokenizerVisitor::visit(expression::NODE &o) {                \
     auto parent_op = _temporal_ope_stack.top();                      \
     _temporal_ope_stack.push(ope::temporalOpe::NODE);                \
     auto &items = o.getItems();                                      \
@@ -263,8 +263,8 @@ bool isBinaryRightAssociativePrinter(ope::temporalOpe op) {
                                                                      \
     if (items.size() > 1) {                                          \
       bool leftRequiresBrackets = false;                             \
-      if (isBinaryRightAssociativePrinter(ope::temporalOpe::NODE) &&        \
-          isBinaryRightAssociativePrinter(items[0]->getOperator()) &&       \
+      if (isBinaryRightAssociative(ope::temporalOpe::NODE) &&        \
+          isBinaryRightAssociative(items[0]->getOperator()) &&       \
           isSamePrecedence(ope::temporalOpe::NODE,                   \
                            items[0]->getOperator())) {               \
         leftRequiresBrackets = true;                                 \
@@ -320,7 +320,7 @@ bool isBinaryRightAssociativePrinter(ope::temporalOpe op) {
   }
 
 #define SERE_BINARY(NODE)                                            \
-  void PrinterVisitor::visit(expression::NODE &o) {                  \
+  void TokenizerVisitor::visit(expression::NODE &o) {                \
     auto parent_op = _temporal_ope_stack.top();                      \
     bool needsCurlyBrackets = sereNeedsCurlyBrackets();              \
     _temporal_ope_stack.push(ope::temporalOpe::NODE);                \
@@ -353,7 +353,7 @@ bool isBinaryRightAssociativePrinter(ope::temporalOpe op) {
   }
 
 #define SERE_WINDOW_BASED(NODE, IS_LEFT)                             \
-  void PrinterVisitor::visit(expression::NODE &o) {                  \
+  void TokenizerVisitor::visit(expression::NODE &o) {                \
     bool needsCurlyBrackets = sereNeedsCurlyBrackets();              \
     auto parent_op = _temporal_ope_stack.top();                      \
     _temporal_ope_stack.push(ope::temporalOpe::NODE);                \
@@ -399,7 +399,7 @@ bool isBinaryRightAssociativePrinter(ope::temporalOpe op) {
     _temporal_ope_stack.pop();                                       \
   }
 
-void PrinterVisitor::visit(BooleanLayerNot &o) {
+void TokenizerVisitor::visit(BooleanLayerNot &o) {
   _temporal_ope_stack.push(ope::temporalOpe::BooleanLayerNot);
   _ss << selCol(opeToString(ope::temporalOpe::BooleanLayerNot),
                 BOOL(opeToString(ope::BooleanLayerNot)));
@@ -407,7 +407,7 @@ void PrinterVisitor::visit(BooleanLayerNot &o) {
   _temporal_ope_stack.pop();
 }
 
-void PrinterVisitor::visit(BooleanLayerPermutationPlaceholder &o) {
+void TokenizerVisitor::visit(BooleanLayerPermutationPlaceholder &o) {
   if (_printMode == PrintMode::ShowAll) {
     if (!isUnary(*o.getPlaceholderPointer())) {
       _ss << selCol("(", TEMP("("));
@@ -420,7 +420,7 @@ void PrinterVisitor::visit(BooleanLayerPermutationPlaceholder &o) {
     _ss << selCol(o.getToken(), VAR(o.getToken()));
   }
 }
-void PrinterVisitor::visit(BooleanLayerDTPlaceholder &o) {
+void TokenizerVisitor::visit(BooleanLayerDTPlaceholder &o) {
   if (_printMode == PrintMode::ShowAll) {
     if (isEmptyPropositionAnd(*o.getPlaceholderPointer())) {
       _ss << selCol("true", BOOL("true"));
@@ -450,7 +450,7 @@ void PrinterVisitor::visit(BooleanLayerDTPlaceholder &o) {
     _ss << selCol(o.getToken(), VAR(o.getToken()));
   }
 }
-void PrinterVisitor::visit(BooleanLayerInst &o) {
+void TokenizerVisitor::visit(BooleanLayerInst &o) {
   bool needsBrackets = !isUnary(o.getProposition());
   needsBrackets &= !isPropositionAnd(o.getProposition()) ||
                    getPropositionAndSize(o.getProposition()) > 1;
@@ -481,7 +481,7 @@ SERE_BINARY(SereAnd)
 SERE_BINARY(SereOr)
 SERE_BINARY(SereIntersect)
 
-void PrinterVisitor::visit(PropertyNext &o) {
+void TokenizerVisitor::visit(PropertyNext &o) {
   _temporal_ope_stack.push(ope::temporalOpe::PropertyNext);
   _ss << selCol(opeToString(ope::PropertyNext, _lang),
                 TEMP(opeToString(ope::PropertyNext, _lang)));
@@ -499,7 +499,7 @@ void PrinterVisitor::visit(PropertyNext &o) {
   _temporal_ope_stack.pop();
 }
 
-void PrinterVisitor::visit(PropertyImplication &o) {
+void TokenizerVisitor::visit(PropertyImplication &o) {
   _temporal_ope_stack.push(ope::temporalOpe::PropertyImplication);
 
   auto [open, close] = getSereBrackets();
@@ -514,6 +514,7 @@ void PrinterVisitor::visit(PropertyImplication &o) {
     _ss << selCol(close, TEMP(close));
   }
   _ss << selCol(" ", TIMPL(" "));
+  _ss << "$";
   if (o.isMMImplication()) {
     _ss << selCol("|", TIMPL("|"));
   }
@@ -522,12 +523,13 @@ void PrinterVisitor::visit(PropertyImplication &o) {
   } else {
     _ss << selCol("=>", TIMPL("=>"));
   }
+  _ss << "$";
   _ss << selCol(" ", TIMPL(" "));
   o.getItems()[1]->acceptVisitor(*this);
   _temporal_ope_stack.pop();
 }
 
-void PrinterVisitor::visit(SereFirstMatch &o) {
+void TokenizerVisitor::visit(SereFirstMatch &o) {
   bool needsCurlyBrackets = sereNeedsCurlyBrackets();
   auto [open, close] = getSereBrackets();
   _temporal_ope_stack.push(ope::temporalOpe::SereFirstMatch);
@@ -543,7 +545,7 @@ void PrinterVisitor::visit(SereFirstMatch &o) {
   _temporal_ope_stack.pop();
 }
 
-void PrinterVisitor::visit(SereConcat &o) {
+void TokenizerVisitor::visit(SereConcat &o) {
   bool needsCurlyBrackets = sereNeedsCurlyBrackets();
   auto parent_op = _temporal_ope_stack.top();
   bool putBrackets =
@@ -573,7 +575,7 @@ void PrinterVisitor::visit(SereConcat &o) {
   _temporal_ope_stack.pop();
 }
 
-void PrinterVisitor::visit(SerePlus &o) {
+void TokenizerVisitor::visit(SerePlus &o) {
   bool needsCurlyBrackets = sereNeedsCurlyBrackets();
   auto [open, close] = getSereBrackets();
   _temporal_ope_stack.push(ope::temporalOpe::SerePlus);

@@ -119,4 +119,6 @@ bool isSimple(const TemporalExpressionPtr &exp);
 std::string printAST_terminal(const TemporalExpressionPtr &exp,
                               const Language lang,
                               const PrintMode mode);
+
+std::string temp2Tokenized(const TemporalExpressionPtr &exp);
 } // namespace expression

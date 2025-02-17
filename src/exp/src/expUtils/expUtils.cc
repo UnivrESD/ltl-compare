@@ -10,6 +10,7 @@
 #include "formula/atom/Variable.hh"
 #include "visitors/CopyVisitor.hh"
 #include "visitors/PrinterVisitor.hh"
+#include "visitors/TokenizerVisitor.hh"
 #include "visitors/TraceChangerVisitor.hh"
 #include "visitors/VarExtractVisitor.hh"
 
@@ -264,6 +265,14 @@ std::string printAST_terminal(const TemporalExpressionPtr &exp,
   traverse(exp, enter, exit);
 
   return terminal_.str();
+}
+
+std::string temp2Tokenized(const TemporalExpressionPtr &exp) {
+
+  TokenizerVisitor tokenizer(Language::SpotLTL, false,
+                             PrintMode::ShowAll);
+  exp->acceptVisitor(tokenizer);
+  return tokenizer.get();
 }
 
 } // namespace expression
