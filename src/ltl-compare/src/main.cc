@@ -45,6 +45,7 @@
 #include <spot/twaalgos/word.hh>
 #include <spot/twa/twaproduct.hh>
 
+
 static void parseCommandLineArguments(int argc, char *args[]);
 
 /*
@@ -85,6 +86,27 @@ void dfs(spot::const_twa_graph_ptr aut){
 
 
 }*/
+std::set<std::string> splitConditions(const std::string& str) {
+    std::set<std::string> conditions;
+    std::stringstream ss(str);
+    std::string condition;
+    while (std::getline(ss, condition, '&')) { // Separazione per '&' invece di ','
+        condition.erase(0, condition.find_first_not_of(" ")); // Rimuove spazi iniziali
+        condition.erase(condition.find_last_not_of(" ") + 1); // Rimuove spazi finali
+        conditions.insert(condition);
+    }
+    return conditions;
+}
+std::set<std::string> flatten(const std::vector<std::vector<std::string>>& vec) {
+   std::set<std::string> flatSet;
+    for (const auto& subVec : vec) {
+        for (const auto& str : subVec) {
+            std::set<std::string> conditions = splitConditions(str);
+            flatSet.insert(conditions.begin(), conditions.end());
+        }
+    }
+    return flatSet;
+}
 
 std::string vectorToString(const std::vector<std::string> vec, const std::string& delimiter){
   std::ostringstream oss;
@@ -370,18 +392,18 @@ std::vector<std::vector<std::string>>&risultato){
 
     // Controlla se lo stato è accettante
     if (aut->state_is_accepting(state)) {
-        std::cout << "Route to accepting state: ";
+        //std::cout << "Route to accepting state: ";
         for(size_t i=0; i<path.size();++i){
           //std::cout<<"prova"<<'\n';
           //std::cout<<path[i];
           if(i<edges.size()){
             temp.push_back(prova(edges[i],false));
-            std::cout<< temp.back() << "," <<'\n';
+            //std::cout<< temp.back() << "," <<'\n';
           }
         }
         risultato.push_back(temp);
         temp.clear();
-        std::cout << '\n';
+        //std::cout << '\n';
     }
 
     // Esplora tutti i vicini
@@ -426,6 +448,20 @@ void samu_prova(spot::const_twa_graph_ptr aut){
   }
 }
 
+
+std::vector<std::vector<std::string>> hybridCompare(spot::const_twa_graph_ptr aut){
+  std::vector<bool>seen(aut->num_states(),false);
+  std::vector<unsigned>path;
+  //std::vector<spot::formula>edges;
+  std::vector<spot::formula>edges;
+  std::vector<std::string> temp;
+  std::vector<std::vector<std::string>> risultato;
+    std::vector<std::vector<std::string>> real;
+  dfs_rec_prova(aut,aut->get_init_state_number(),seen,path,edges,aut->get_dict(),temp,risultato);
+  stampaVettore(risultato);
+  return risultato;
+
+}
 
 //domande da fare perche forse da solo non ne esco
 /*
@@ -576,9 +612,8 @@ int main(int arg, char *argv[]) {
 
   int primavolta = 0;
  size_t statoaccetante = 0;
- std::vector<std::vector<std::string>> list2;
+ std::vector<std::vector<std::string>> list1;
 
-  std::cout << "prova a | b" << '\n';
   spot::parsed_formula pf = spot::parse_infix_psl("{a##1b}|{x ##1 y ##1z}");
   if(pf.format_errors(std::cerr))
     return 1;
@@ -588,7 +623,17 @@ int main(int arg, char *argv[]) {
   //list2 = dfs_rec(aut,primavolta,statoaccetante);
    //stampaVettore(list2);
   std::cout << "\n\n" << std::endl;
-  std::vector<bool>seen(aut->num_states(),false);
+  list1 = hybridCompare(aut);
+  std::vector<std::vector<std::string>> list2;
+  spot::parsed_formula pf2 = spot::parse_infix_psl("{a##1b}|{x ##1 y ##1z}");
+  if(pf2.format_errors(std::cerr))
+    return 1;
+    spot::translator trans1;
+  trans1.set_pref(spot::postprocessor::Deterministic);
+  auto aut1 = trans.run(pf2.f);
+  std::cout<<"\n\n"<<std::endl;
+  list2 = hybridCompare(aut1);
+  /*std::vector<bool>seen(aut->num_states(),false);
   std::vector<unsigned>path;
   //std::vector<spot::formula>edges;
   std::vector<spot::formula>edges;
@@ -596,31 +641,32 @@ int main(int arg, char *argv[]) {
   std::vector<std::vector<std::string>> risultato;
     std::vector<std::vector<std::string>> real;
   dfs_rec_prova(aut,aut->get_init_state_number(),seen,path,edges,aut->get_dict(),temp,risultato);
-  stampaVettore(risultato);
+  stampaVettore(risultato);*/
+
   //real = beautify(risultato);
-  printf("siumm\n");
+  //printf("siumm\n");
   //stampaVettore(real);
-  std::cout << "\n\n" << std::endl;
-  samu_prova(aut);
+  //std::cout << "\n\n" << std::endl;
+  //samu_prova(aut);
   //std::cout << prova(pf.f,false) << '\n';
   
 
 
-  /*std::vector<std::string> intersezione; 
-  std::vector<std::string> unione ; 
-
-  std::sort(list1.begin(), list1.end());
-  std::sort(list2.begin(), list2.end());
-
-  std::set_intersection(list1.begin(), list1.end(), list2.begin(), list2.end(),
-                        std::back_inserter(intersezione));
-
-  std::set_union(list1.begin(), list1.end(), list2.begin(), list2.end(),
-                 std::back_inserter(unione));
-
-  double percentuale = (double)intersezione.size() / unione.size() * 100;
-
-  std::cout << "Percentuale di intersezione: " << percentuale << "%" << std::endl;*/
+   std::set<std::string> set1 = flatten(list1);
+    std::set<std::string> set2 = flatten(list2);
+    
+    std::vector<std::string> intersezione;
+    std::vector<std::string> unione;
+    
+    std::set_intersection(set1.begin(), set1.end(), set2.begin(), set2.end(),
+                          std::back_inserter(intersezione));
+    
+    std::set_union(set1.begin(), set1.end(), set2.begin(), set2.end(),
+                   std::back_inserter(unione));
+    
+    double percentuale = unione.empty() ? 0 : (double)intersezione.size() / unione.size() * 100;
+    
+    std::cout << "Percentuale di intersezione: " << percentuale << "%" << std::endl;
   
   /*primavolta = 0;
   statoaccetante = 0;

@@ -67,12 +67,20 @@ std::shared_ptr<spot::twa_graph> build(const spot::formula &formula) {
 }
 TEST(ltlcompare, jaccard) {
 
-  std::shared_ptr<spot::twa_graph> aut1 =
-      //build(spot::parse_infix_psl("{a ##1 b ##1 c} & {w ##1 x ##1 y ##1 z}").f);
-  //    build(spot::parse_infix_psl("a U b").f);
-      build(spot::parse_infix_psl("{a ##1 b} | {x ##1 y ##1 z}").f);
-
-    std::cout << *aut1->accepting_run()<< "\n";
-   // std::cout << *aut1->accepting_run() << "\n";
-  //
+  std::string assFile = "../tests/input/ltl-compare-ass1.txt";
+  std::ifstream file(assFile);
+  if (!file) {
+    std::cerr << "Errore nell aprire il file!" << std::endl;
+  }
+  double risultati[10] = {100};
+  float res;
+  int i = 0;
+  std::string line1, line2;
+  while (std::getline(file, line1)) {
+    if (std::getline(file, line2)) {
+      res = hybridComparison(line1, line2);
+      ASSERT_EQ(res, risultati[i]);
+      i++;
+    }
+  }
 }
